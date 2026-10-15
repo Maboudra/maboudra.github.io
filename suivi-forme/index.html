@@ -18,11 +18,11 @@ h2{font-size:16px;margin:0 0 10px}
 .card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px}
 .muted{color:var(--muted);font-size:13px}
 .row{display:flex;gap:8px;align-items:center}
-.row>*{flex:1}
+.row>*{flex:1;min-width:0}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
 .stat b{display:block;font-size:20px}
 .stat span{font-size:12px;color:var(--muted)}
-textarea,input,select{width:100%;background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+textarea,input,select{width:100%;min-width:0;background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
 textarea{min-height:84px;resize:vertical}
 button{background:var(--accent);color:#06210f;border:0;border-radius:10px;padding:11px 14px;font:600 15px inherit;font-family:inherit;cursor:pointer}
 button.ghost{background:var(--card2);color:var(--text)}
@@ -39,7 +39,7 @@ button:disabled{opacity:.5}
 .seg button.on{background:var(--card);color:var(--text)}
 .ex{border-top:1px solid var(--line);padding:12px 0}
 .ex:first-of-type{border-top:0}
-.sets{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center;margin-top:8px}
+.sets{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center;margin-top:8px}
 .sets input{padding:7px}
 .check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}
 .check input{width:22px;height:22px;flex:none;margin-top:1px}
@@ -54,6 +54,8 @@ svg text{fill:var(--muted);font-size:10px}
 .guide{background:var(--card2);border-radius:10px;padding:10px 12px;margin-top:6px;font-size:14px}
 .guide p{margin:4px 0 8px}
 .vid{display:inline-block;color:var(--accent2);text-decoration:none;font-weight:600;font-size:14px}
+.bloc{color:var(--accent);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:14px}
+.ex.inbloc{border-left:3px solid var(--accent);padding-left:10px;border-top:0}
 details summary{cursor:pointer;color:var(--accent2);font-size:13px;margin-top:6px}
 </style>
 </head>
@@ -62,66 +64,124 @@ details summary{cursor:pointer;color:var(--accent2);font-size:13px;margin-top:6p
 <nav id="nav"></nav>
 <script>
 // ---------- Données de base ----------
-const ex = (n, t, alt) => ({n, t, alt});
+const ex = (n, t, alt, b) => ({n, t, alt, b});
+// b : bloc. Les exercices d'un même bloc s'enchaînent sans repos, repos 90 s à la fin du bloc.
+const SS1 = 'Superset 1', SS2 = 'Superset 2', SS3 = 'Superset 3', TRI = 'Triset', FIN = 'Finisher', CIR = 'Circuit 4 tours (repos 90 s entre les tours)', BONUS = 'Bonus tirage';
 const PROGRAM = {
-  A: {name: 'Haut du corps, priorité tirage', def: 'maison',
-    maison: [ex('Tractions négatives', '4 x 3 (descente 5 s)', ['Suspension active 20 s', 'Tractions élastique', 'Tractions strictes (quand max ≥ 5)']),
-      ex('Rowing australien (barre basse)', '4 x 8-12', ['Rowing sous une table', 'Rowing pieds surélevés (plus dur)']),
-      ex('Chin-up isométrique', '3 x 10-20 s', ['Suspension bras fléchis à 90°']),
-      ex('Pompes', '3 x 8-15', ['Pompes pieds surélevés', 'Pompes archer']),
-      ex('Y-T-W au sol', '3 x 10', ['Superman', 'Planche inversée']),
-      ex('Curl sac à dos', '3 x 12', ['Curl serviette', 'Chin-up négatif prise serrée'])],
-    salle: [ex('Tractions assistées machine', '4 x 6-10', ['Tractions négatives', 'Tirage vertical poulie']),
-      ex('Rowing barre', '3 x 8-10', ['Rowing haltère un bras', 'Rowing poulie assis']),
-      ex('Face pull', '3 x 12-15', ['Oiseau haltères', 'Reverse fly machine']),
-      ex('Développé haltères', '3 x 8-12', ['Pompes lestées']),
-      ex('Curl haltères', '3 x 10-12', ['Curl barre EZ', 'Curl marteau'])]},
-  B: {name: 'Haut du corps, priorité poussée', def: 'maison',
-    maison: [ex('Dips', '4 x 6-12', ['Dips négatifs', 'Dips lestés sac à dos (quand 4 x 12 OK)']),
-      ex('Pompes', '4 x 8-15', ['Pompes pieds surélevés', 'Pompes archer', 'Pompes lestées sac à dos']),
-      ex('Pike push-ups', '3 x 6-10', ['Pompes déclinées', 'Poirier contre le mur (avancé)']),
-      ex('Rowing australien (barre basse)', '3 x 10', ['Rowing sous une table']),
-      ex('Pompes diamant', '3 x max -2', ['Pompes serrées', 'Dips sur banc']),
-      ex('Relevés de genoux à la barre', '3 x 8-12', ['Hollow hold', 'Planche 45 s'])],
-    salle: [ex('Développé couché', '4 x 6-10', ['Développé haltères', 'Presse pectorale machine']),
-      ex('Dips', '3 x 8-12', ['Dips lestés', 'Dips machine']),
-      ex('Développé militaire haltères', '3 x 8-10', ['Développé épaules machine', 'Arnold press']),
-      ex('Élévations latérales', '3 x 12-15', ['Élévations poulie']),
-      ex('Extension triceps poulie', '3 x 10-12', ['Barre au front'])]},
-  C: {name: 'Jambes + cardio Zone 2', def: 'salle',
-    salle: [ex('Presse à cuisses', '4 x 10-12', ['Hack squat', 'Goblet squat (si cheville OK)']),
-      ex('Hip thrust', '3 x 10-12', ['Pont fessier barre', 'Kickback poulie']),
-      ex('Leg curl', '3 x 10-12', ['Soulevé de terre roumain haltères', 'Nordic négatif']),
-      ex('Leg extension', '3 x 12-15', ['Presse pieds bas']),
-      ex('Mollets debout (rééducation)', '3 x 15', ['Mollets assis machine', 'Mollets à la presse']),
-      ex('Relevés de jambes suspendu', '3 x 8-12', ['Relevés de genoux', 'Crunch poulie']),
-      ex('Vélo ou rameur Zone 2', '20-30 min (tu peux parler)', ['Tapis en pente, marche', 'Elliptique (si cheville OK)'])],
-    maison: [ex('Chaise murale', '3 x 30-60 s', ['Squat partiel sans douleur', 'Squat sur chaise']),
-      ex('Pont fessier une jambe', '3 x 10-15', ['Pont fessier deux jambes', 'Hip thrust sur canapé']),
-      ex('Leg curl serviette au sol', '3 x 8-12', ['Pont fessier marché']),
-      ex('Fente arrière lente (si zéro douleur)', '3 x 8 / jambe', ['Split squat statique', 'Step-up sur marche basse']),
-      ex('Montées sur pointe', '3 x 15', ['Montées sur pointe assis', 'Deux pieds si douleur']),
-      ex('Marche rapide Zone 2', '30-40 min', ['Vélo d\'appartement'])]},
-  D: {name: 'Full body + HIIT sans saut', def: 'maison',
-    maison: [ex('Tractions négatives', '3 x 3', ['Suspension active 20 s']),
-      ex('Circuit : pompes', '4 tours x 10', ['Pompes surélevées']),
-      ex('Circuit : rowing australien', '4 tours x 10', ['Rowing sous une table']),
-      ex('Circuit : dips', '4 tours x 8', ['Dips sur banc']),
-      ex('Circuit : pont fessier', '4 tours x 15', ['Chaise murale 40 s']),
-      ex('HIIT sans saut', '8 x (30 s effort / 30 s repos)', ['Mountain climbers lents', 'Squat + planche alternés', 'Shadow boxing'])],
-    salle: [ex('Tractions assistées machine', '3 x 6-10', ['Tractions négatives']),
-      ex('Développé incliné haltères', '3 x 8-12', ['Pompes pieds surélevés']),
-      ex('Rowing poulie assis', '3 x 10-12', ['Rowing haltère']),
-      ex('Presse à cuisses', '3 x 12', ['Hack squat']),
-      ex('HIIT vélo ou rameur', '8 x (30 s fort / 90 s léger)', ['Assault bike', 'Ergomètre à bras'])]}
+  H1: {name: 'Haut du corps 1, force', def: 'maison',
+    note: 'Échauffement 5 min : cercles de bras, élastique léger (écartés), 2 x 20 s de suspension active. Dans un superset, enchaîne les 2 exercices sans pause, puis 90 s de repos.',
+    maison: [ex('Tractions négatives', '4 x 3 (descente 5 s)', ['Tractions strictes (quand max ≥ 5)', 'Suspension active 20 s'], SS1),
+      ex('Dips', '4 x 6-10', ['Dips négatifs', 'Dips lestés sac à dos (quand 4 x 12 OK)'], SS1),
+      ex('Rowing australien (barre basse)', '4 x 8-12', ['Rowing australien pieds surélevés', 'Rowing sous une table'], SS2),
+      ex('Pompes pieds surélevés', '4 x 8-12', ['Pompes', 'Pompes archer'], SS2),
+      ex('Chin-up isométrique', '3 x max', ['Suspension bras fléchis à 90°'], SS3),
+      ex('Pike push-ups', '3 x 6-10', ['Pompes déclinées'], SS3),
+      ex('Curl sac à dos', '3 x 10-12', ['Curl élastique'], TRI),
+      ex('Pompes diamant', '3 x max -2', ['Pompes serrées'], TRI),
+      ex('Y-T-W au sol', '3 x 10', ['Face pull élastique'], TRI),
+      ex('Finisher EMOM 8 min', '8 min : minutes impaires 10 pompes, paires 8 rowings australiens', ['Finisher circuit 3 tours'], FIN)],
+    salle: [ex('Tractions assistées machine', '4 x 6-8', ['Tractions négatives'], SS1),
+      ex('Dips', '4 x 8-12', ['Dips lestés'], SS1),
+      ex('Rowing barre', '4 x 8-10', ['Rowing haltère un bras'], SS2),
+      ex('Développé incliné haltères', '4 x 8-12', ['Développé haltères'], SS2),
+      ex('Tirage vertical poulie', '3 x 10-12', ['Tirage prise serrée'], SS3),
+      ex('Développé militaire haltères', '3 x 8-10', ['Arnold press'], SS3),
+      ex('Curl haltères', '3 x 10-12', ['Curl marteau'], TRI),
+      ex('Extension triceps poulie', '3 x 10-12', ['Barre au front'], TRI),
+      ex('Face pull', '3 x 15', ['Oiseau haltères'], TRI),
+      ex('Finisher vélo ou rameur', '8 min : 30 s fort / 30 s léger', ['Finisher EMOM 8 min'], FIN)]},
+  J1: {name: 'Jambes 1, quadriceps', def: 'salle',
+    note: 'Pas de saut, pas de course. Si la cheville tire sur un exercice, prends l\'alternative. Le bonus tirage compense le manque de tractions à la maison.',
+    salle: [ex('Presse à cuisses', '4 x 10-12', ['Presse pieds bas']),
+      ex('Hack squat', '3 x 10-12', ['Goblet squat (si cheville OK)', 'Presse à cuisses']),
+      ex('Leg extension', '3 x 12-15', ['Sissy squat assisté']),
+      ex('Split squat statique', '3 x 8 / jambe (si zéro douleur)', ['Presse unilatérale']),
+      ex('Mollets debout (rééducation)', '4 x 12-15', ['Mollets à la presse']),
+      ex('Relevés de jambes suspendu', '3 x 10-12', ['Relevés de genoux', 'Crunch poulie']),
+      ex('Tractions assistées machine', '3 x 8-10', ['Tirage vertical poulie'], BONUS),
+      ex('Finisher vélo ou rameur', '10 min : 30 s fort / 30 s léger', ['Vélo ou rameur Zone 2'], FIN)],
+    maison: [ex('Chaise murale', '4 x 45-60 s', ['Squat partiel sans douleur']),
+      ex('Split squat statique', '4 x 10 / jambe', ['Fente arrière lente (si zéro douleur)']),
+      ex('Pont fessier une jambe', '3 x 12-15', ['Pont fessier deux jambes']),
+      ex('Montées sur pointe', '4 x 15', ['Montées sur pointe assis']),
+      ex('Relevés de genoux à la barre', '3 x 10-12', ['Hollow hold']),
+      ex('Tractions négatives', '3 x 3', ['Suspension active 20 s'], BONUS),
+      ex('HIIT sans saut', '8 x (30 s effort / 30 s repos)', ['Marche rapide Zone 2'], FIN)]},
+  H2: {name: 'Haut du corps 2, volume', def: 'maison',
+    note: 'Plus de répétitions, moins de repos (60 s après chaque bloc). Garde 1-2 reps en réserve sauf sur la dernière série.',
+    maison: [ex('Rowing australien pieds surélevés', '4 x 6-10', ['Rowing australien (barre basse)'], SS1),
+      ex('Pompes', '4 x 10-15', ['Pompes archer', 'Pompes pieds surélevés'], SS1),
+      ex('Tractions négatives prise serrée', '4 x 3 (descente 5 s)', ['Tractions négatives'], SS2),
+      ex('Dips', '4 x max -2', ['Dips négatifs'], SS2),
+      ex('Face pull élastique', '3 x 15-20', ['Y-T-W au sol'], SS3),
+      ex('Pike push-ups', '3 x 8-10', ['Pompes déclinées'], SS3),
+      ex('Curl sac à dos', '3 x 12-15', ['Curl élastique'], TRI),
+      ex('Élévations latérales bouteilles', '3 x 15-20', ['Élévations latérales élastique'], TRI),
+      ex('Relevés de genoux à la barre', '3 x 10-12', ['Hollow hold'], TRI),
+      ex('Finisher circuit 3 tours', '3 tours : 10 pompes, 10 rowings, 30 s planche', ['Finisher EMOM 8 min'], FIN)],
+    salle: [ex('Tirage vertical poulie', '4 x 10-12', ['Tractions assistées machine'], SS1),
+      ex('Développé haltères', '4 x 10-12', ['Presse pectorale machine'], SS1),
+      ex('Rowing poulie assis', '4 x 10-12', ['Rowing machine'], SS2),
+      ex('Dips', '4 x max -2', ['Dips machine'], SS2),
+      ex('Face pull', '3 x 15', ['Oiseau haltères'], SS3),
+      ex('Élévations latérales', '3 x 15', ['Élévations poulie'], SS3),
+      ex('Curl haltères', '3 x 12', ['Curl poulie'], TRI),
+      ex('Extension triceps poulie', '3 x 12', ['Extension haltère au-dessus de la tête'], TRI),
+      ex('Relevés de jambes suspendu', '3 x 10-12', ['Crunch poulie'], TRI),
+      ex('Finisher vélo ou rameur', '8 min : 30 s fort / 30 s léger', ['Finisher circuit 3 tours'], FIN)]},
+  J2: {name: 'Jambes 2, fessiers et ischios', def: 'salle',
+    note: 'Contrôle la descente sur chaque répétition (2-3 s). Le soulevé de terre roumain : dos plat, toujours.',
+    salle: [ex('Hip thrust', '4 x 8-12', ['Pont fessier barre']),
+      ex('Soulevé de terre roumain haltères', '3 x 10', ['Leg curl']),
+      ex('Leg curl', '4 x 10-12', ['Nordic négatif']),
+      ex('Presse pieds hauts', '3 x 12-15', ['Presse à cuisses']),
+      ex('Abducteurs machine', '3 x 15-20', ['Kickback poulie']),
+      ex('Mollets assis machine', '3 x 15', ['Mollets debout (rééducation)']),
+      ex('Tirage vertical poulie', '3 x 10-12', ['Tractions assistées machine'], BONUS),
+      ex('Finisher vélo ou rameur', '10 min : 30 s fort / 30 s léger', ['Vélo ou rameur Zone 2'], FIN)],
+    maison: [ex('Pont fessier une jambe', '4 x 12-15', ['Pont fessier deux jambes']),
+      ex('Leg curl serviette au sol', '4 x 8-12', ['Pont fessier marché']),
+      ex('Chaise murale', '3 x 45-60 s', ['Squat partiel sans douleur']),
+      ex('Montées sur pointe', '4 x 15', ['Montées sur pointe assis']),
+      ex('Dead bug', '3 x 12', ['Hollow hold']),
+      ex('Rowing australien (barre basse)', '3 x 10', ['Rowing sous une table'], BONUS),
+      ex('HIIT sans saut', '8 x (30 s effort / 30 s repos)', ['Marche rapide Zone 2'], FIN)]},
+  H3: {name: 'Haut du corps 3, densité + HIIT', def: 'maison',
+    note: 'Enchaîne les 5 exercices sans pause, 90 s de repos, recommence. Note le temps total : il doit baisser au fil des semaines.',
+    maison: [ex('Tractions négatives', '4 tours x 2', ['Suspension active 20 s'], CIR),
+      ex('Dips', '4 tours x 8', ['Dips négatifs'], CIR),
+      ex('Rowing australien (barre basse)', '4 tours x 10', ['Rowing sous une table'], CIR),
+      ex('Pompes', '4 tours x 12', ['Pompes pieds surélevés'], CIR),
+      ex('Relevés de genoux à la barre', '4 tours x 10', ['Hollow hold'], CIR),
+      ex('Face pull élastique', '3 x 20', ['Y-T-W au sol']),
+      ex('HIIT sans saut', '8 x (30 s effort / 30 s repos)', ['Mountain climbers lents', 'Shadow boxing'], FIN)],
+    salle: [ex('Tractions assistées machine', '4 tours x 8', ['Tirage vertical poulie'], CIR),
+      ex('Dips', '4 tours x 8', ['Dips machine'], CIR),
+      ex('Rowing poulie assis', '4 tours x 10', ['Rowing haltère'], CIR),
+      ex('Pompes', '4 tours x 12', ['Développé haltères'], CIR),
+      ex('Relevés de jambes suspendu', '4 tours x 10', ['Relevés de genoux'], CIR),
+      ex('HIIT vélo ou rameur', '8 x (30 s fort / 90 s léger)', ['Assault bike'], FIN)]}
 };
-const WEEK = [['Lun', 'A · Haut tirage (maison)'], ['Mar', 'Zone 2, 40 min'], ['Mer', 'B · Haut poussée (maison)'],
-  ['Jeu', 'C · Jambes + Zone 2 (salle)'], ['Ven', 'Repos actif, marche'], ['Sam', 'D · Full body + HIIT doux (maison)'], ['Dim', 'Repos ou Zone 2']];
-const ORDER = ['A', 'B', 'C', 'D'];
+const WEEK = [['Lun', 'H1 · Haut du corps force (maison)'], ['Mar', 'J1 · Jambes quadriceps (salle)'], ['Mer', 'H2 · Haut du corps volume (maison)'],
+  ['Jeu', 'J2 · Jambes fessiers et ischios (salle)'], ['Ven', 'Repos, marche, 10 000 pas'], ['Sam', 'H3 · Densité + HIIT (maison)'], ['Dim', 'Repos ou Zone 2']];
+const ORDER = ['H1', 'J1', 'H2', 'J2', 'H3'];
 
 // ---------- Fiches exercices (d : départ, m : mouvement, k : points clés, e : erreur, q : recherche vidéo) ----------
 const G = (d, m, k, e, q) => ({d, m, k, e, q});
 const GUIDE = {
+  'Rowing australien pieds surélevés': G('Sous la barre basse, pieds posés sur une chaise, corps droit.', 'Tire la poitrine vers la barre, redescends en 2 s.', 'Plus dur que le rowing australien classique : c\'est ton exercice de tirage principal à la maison.', 'Hanches qui tombent.', 'feet elevated inverted row'),
+  'Tractions négatives prise serrée': G('Paumes vers toi, mains largeur d\'épaules, menton au-dessus de la barre (avec une chaise).', 'Descends en 5 s jusqu\'aux bras tendus.', 'Travaille plus les biceps que la prise large.', 'Se laisser tomber à la fin.', 'negative chin ups'),
+  'Face pull élastique': G('Élastique accroché à hauteur du visage (poignée de porte, barre), une extrémité dans chaque main.', 'Tire vers le front en écartant les mains, coudes hauts, 1 s en arrière.', 'Ton élastique léger est parfait ici. Excellent pour les épaules et la posture.', 'Tirer avec le dos cambré.', 'band face pull'),
+  'Élévations latérales bouteilles': G('Debout, une bouteille d\'eau (1,5 L) ou un sac dans chaque main.', 'Lève les bras sur les côtés jusqu\'aux épaules, redescends en 2 s.', 'Coudes légèrement pliés, pas d\'élan.', 'Hausser les épaules.', 'lateral raise at home'),
+  'Curl élastique': G('Debout sur l\'élastique, une extrémité dans chaque main.', 'Plie les coudes, redescends lentement.', 'Raccourcis l\'élastique pour plus de résistance.', 'Balancer le buste.', 'resistance band bicep curl'),
+  'Finisher EMOM 8 min': G('Chrono de 8 min, barre basse prête.', 'Au début de chaque minute : minutes impaires 10 pompes, minutes paires 8 rowings australiens. Repos le reste de la minute.', 'Si tu n\'as plus de repos, baisse les reps. Le but est de tenir les 8 min.', 'Partir trop fort à la 1re minute.', 'EMOM workout explained'),
+  'Finisher circuit 3 tours': G('Barre basse prête.', '10 pompes, 10 rowings australiens, 30 s de planche, sans pause. 60 s de repos, 3 tours.', 'Note ton temps total.', 'Bâcler la technique.', 'bodyweight finisher circuit'),
+  'Finisher vélo ou rameur': G('Vélo ou rameur, 2 min d\'échauffement léger.', '30 s à fond, 30 s très léger, pendant 8 à 10 min.', 'Sans impact pour la cheville. Tu dois finir essoufflé.', 'Faire tout à vitesse moyenne.', 'bike sprint intervals'),
+  'Hack squat': G('Dos et épaules contre les coussins, pieds largeur d\'épaules au milieu de la plateforme.', 'Descends jusqu\'à cuisses parallèles, pousse.', 'Pieds fixes : plus sûr pour la cheville qu\'un squat libre.', 'Genoux qui rentrent.', 'hack squat form'),
+  'Soulevé de terre roumain haltères': G('Debout, haltères devant les cuisses, genoux légèrement pliés.', 'Pousse les fesses vers l\'arrière en gardant le dos plat, descends jusqu\'à mi-tibia, remonte en serrant les fesses.', 'Les haltères frôlent les jambes. Tu dois sentir l\'arrière des cuisses s\'étirer.', 'Arrondir le dos.', 'dumbbell romanian deadlift form'),
+  'Presse pieds hauts': G('Presse à cuisses, pieds en haut de la plateforme.', 'Descends profond, pousse dans les talons.', 'Cible plus les fessiers et les ischios.', 'Bas du dos qui décolle.', 'leg press high foot placement glutes'),
+  'Abducteurs machine': G('Assis, genoux contre les coussins.', 'Écarte les jambes, 1 s ouvert, reviens lentement.', 'Buste légèrement penché en avant pour mieux cibler les fessiers.', 'Laisser claquer les poids.', 'hip abduction machine form'),
+  'Mollets assis machine': G('Assis, genoux sous le coussin, avant des pieds sur la marche.', 'Monte haut, redescends lentement sous la marche.', 'Renforce aussi la cheville.', 'Rebondir.', 'seated calf raise form'),
   'Tractions négatives': G('Monte au-dessus de la barre avec une chaise ou un saut, menton au-dessus de la barre.', 'Descends le plus lentement possible (5 s) jusqu\'aux bras tendus. Remonte avec la chaise, recommence.', 'Omoplates serrées et basses, gainage, contrôle jusqu\'en bas.', 'Se laisser tomber à la fin. Les 2 dernières secondes comptent le plus.', 'negative pull ups tutorial'),
   'Tractions strictes (quand max ≥ 5)': G('Suspendu, bras tendus, mains un peu plus larges que les épaules, paumes vers l\'avant.', 'Tire les coudes vers les hanches jusqu\'au menton au-dessus de la barre, redescends contrôlé.', 'Commence par abaisser les épaules, pas d\'élan, gainage.', 'Balancer les jambes ou ne descendre qu\'à moitié.', 'pull up proper form'),
   'Suspension active 20 s': G('Suspendu à la barre, bras tendus.', 'Abaisse les épaules (comme pour les éloigner des oreilles) et tiens 20 s.', 'Le corps monte de 2-3 cm sans plier les bras. Ça construit la base des tractions.', 'Rester relâché, épaules dans les oreilles.', 'active hang scapular pull up'),
@@ -273,9 +333,9 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 
 const DEFAULT = {
-  settings: {apiKey: '', model: 'gpt-4o-mini', kcal: 2100, prot: 160, startWeight: 0, goalWeight: 0, goalDate: '', profil: ''},
+  settings: {apiKey: '', model: 'gpt-4o-mini', kcal: 2100, prot: 160, steps: 10000, startWeight: 0, goalWeight: 0, goalDate: '', profil: ''},
   meals: {}, weights: [], workouts: [], runs: [], ankle: {phase: 1, log: {}, criteria: {}},
-  gtg: {log: {}, tests: []}, cardio: [], measures: []
+  gtg: {log: {}, tests: []}, cardio: [], measures: [], steps: {}
 };
 let S;
 try { S = Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem('suivi-forme') || '{}')); } catch { S = structuredClone(DEFAULT); }
@@ -310,7 +370,7 @@ function context() {
   return JSON.stringify({
     profil: S.settings.profil || 'Non renseigné',
     semaine_type: WEEK, tractions_gtg: {tests_max: S.gtg.tests.slice(-6), jours: Object.entries(S.gtg.log).slice(-10).map(([d, l]) => ({d, total: l.reduce((a, b) => a + b, 0)}))},
-    cardio: S.cardio.slice(-10), mensurations: S.measures.slice(-4),
+    cardio: S.cardio.slice(-10), pas_7j: Object.entries(S.steps).slice(-7), mensurations: S.measures.slice(-4),
     objectifs: S.settings, poids_recents: S.weights.slice(-14),
     calories_7j: days.map(d => ({d, kcal: dayTotals(d).kcal, prot: dayTotals(d).p})),
     seances_recentes: S.workouts.slice(-6), courses: S.runs.slice(-6),
@@ -354,7 +414,7 @@ function lastPerf(name) {
   }
   return null;
 }
-const nextSession = () => { const l = S.workouts[S.workouts.length - 1]; return l ? ORDER[(ORDER.indexOf(l.session) + 1) % 4] : 'A'; };
+const nextSession = () => { const l = S.workouts[S.workouts.length - 1]; return l ? ORDER[(ORDER.indexOf(l.session) + 1) % ORDER.length] : ORDER[0]; };
 const pullMax = () => S.gtg.tests[S.gtg.tests.length - 1]?.max || 1;
 const gtgReps = () => Math.max(1, Math.floor(pullMax() / 2));
 const weekStart = () => { const d = new Date(today() + 'T12:00'); return addDays(today(), -((d.getDay() + 6) % 7)); };
@@ -369,7 +429,7 @@ function viewGtg() {
       <div class="stat"><b>${pullMax()}</b><span>max actuel</span></div></div>
     <div class="row" style="margin-top:10px"><button data-a="gtgAdd" data-v="${n}">+ ${n} traction${n > 1 ? 's' : ''}</button>
       <button class="ghost" style="flex:none" data-a="gtgUndo" ${l.length ? '' : 'disabled'}>Annuler</button></div>
-    <p class="muted">Séries de ${n} (moitié de ton max), 5 à 8 fois dans la journée, après les prières par exemple. Jamais à l'échec, toujours propre. Pause le jour de la séance A si tu es fatigué.</p>
+    <p class="muted">Séries de ${n} (moitié de ton max), 5 à 8 fois dans la journée, après les prières par exemple. Jamais à l'échec, toujours propre. Pause le jour de H1 si tu es fatigué.</p>
     <div class="row"><input id="maxIn" inputmode="numeric" placeholder="Nouveau max (test 1x/semaine, frais)"><button class="ghost" style="flex:none" data-a="gtgMax">Tester</button></div>
     ${tests.length > 1 ? `<p class="muted" style="margin-bottom:0">Progression : ${tests.map(t => t.max).join(' → ')}</p>` : ''}</div>`;
 }
@@ -377,7 +437,13 @@ function viewGtg() {
 function viewCardio() {
   const ws = weekStart(), week = S.cardio.filter(c => c.date >= ws);
   const z2 = week.filter(c => c.type === 'Zone 2').reduce((a, c) => a + c.min, 0), hiit = week.filter(c => c.type === 'HIIT').length;
-  return `<div class="card"><h2>Cardio</h2>
+  const days = [...Array(7)].map((_, i) => addDays(today(), -i)), st = days.map(d => S.steps[d]).filter(Boolean);
+  const avgSteps = st.length ? Math.round(st.reduce((a, b) => a + b, 0) / st.length) : 0, goal = S.settings.steps || 10000;
+  return `<div class="card"><h2>Pas</h2>
+    <div class="row"><input id="stepsIn" inputmode="numeric" placeholder="Pas aujourd'hui (montre)" value="${S.steps[today()] ?? ''}"><button style="flex:none" data-a="addSteps">OK</button></div>
+    <div class="bar"><i style="width:${Math.min(100, (S.steps[today()] || 0) / goal * 100)}%"></i></div>
+    <p class="muted" style="margin-bottom:0">Moyenne 7 jours : <b>${avgSteps.toLocaleString('fr-BE')}</b> / ${goal.toLocaleString('fr-BE')}. Le levier le plus simple pour brûler plus.</p></div>
+  <div class="card"><h2>Cardio</h2>
     <div class="row"><select id="cType"><option>Zone 2</option><option>HIIT</option><option>Marche</option></select>
       <input id="cMin" inputmode="numeric" placeholder="min"><button style="flex:none" data-a="addCardio">+</button></div>
     <p class="muted" style="margin-bottom:0">Cette semaine : ${z2} min de Zone 2 (cible 80-120) · ${hiit} HIIT (max 1)${hiit > 1 ? ' <span class="warn">⚠️ trop en déficit</span>' : ''}</p></div>`;
@@ -430,8 +496,9 @@ function viewSeance() {
     <div class="seg" style="margin-bottom:8px">${ORDER.map(x => `<button class="${x === k ? 'on' : ''}" data-a="sess" data-v="${x}">${x}${x === nextSession() ? ' •' : ''}</button>`).join('')}</div>
     <div class="seg">${['salle', 'maison'].map(m => `<button class="${m === mode ? 'on' : ''}" data-a="mode" data-v="${m}">${m === 'salle' ? 'Salle' : 'Maison'}</button>`).join('')}</div>
     <h2 style="margin-top:12px">${k} · ${P.name}</h2>
-    <p class="muted">Progression : quand tu atteins le haut de la fourchette sur toutes les séries, ajoute du poids ou passe à une variante plus dure. Garde 1-2 reps en réserve.</p>
-    ${draft.exercises.map((e, i) => { const def = P[mode][i], lp = lastPerf(e.name); return `<div class="ex">
+    <p class="muted">${P.note}</p>
+    <p class="muted">Progression : quand tu atteins le haut de la fourchette sur toutes les séries, ajoute une rep, du lest ou passe à une variante plus dure.</p>
+    ${draft.exercises.map((e, i) => { const def = P[mode][i], lp = lastPerf(e.name), nb = def.b && (i === 0 || P[mode][i - 1].b !== def.b); return `${nb ? `<div class="bloc">${def.b}</div>` : ''}<div class="ex${def.b ? ' inbloc' : ''}">
       <select data-a="swap" data-v="${i}">${[def.n, ...def.alt].map(n => `<option ${n === e.name ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
       <div class="muted" style="margin-top:4px">Objectif : ${def.t}${lp ? '<br>Dernière fois : ' + esc(lp) : ''}</div>
       ${guideHtml(e.name)}
@@ -522,7 +589,7 @@ function viewReglages() {
   return `<h1>Réglages</h1>
   <div class="card"><h2>IA</h2>${f('apiKey', 'Clé API OpenAI (reste sur ce téléphone)', 'password')}${f('model', 'Modèle', 'text')}</div>
   <div class="card"><h2>Mon profil (pour le coach IA)</h2><textarea data-a="setting" data-v="profil" placeholder="Âge, poids, blessures, matériel, niveau, objectifs, contraintes…">${esc(st.profil)}</textarea><p class="muted" style="margin-bottom:0">Reste sur ce téléphone, comme toutes tes données.</p></div>
-  <div class="card"><h2>Objectifs</h2>${f('kcal', 'Calories par jour')}${f('prot', 'Protéines par jour (g)')}${f('startWeight', 'Poids de départ (kg)')}${f('goalWeight', 'Poids objectif (kg)')}${f('goalDate', 'Date objectif', 'date')}
+  <div class="card"><h2>Objectifs</h2>${f('kcal', 'Calories par jour')}${f('steps', 'Objectif de pas par jour')}${f('prot', 'Protéines par jour (g)')}${f('startWeight', 'Poids de départ (kg)')}${f('goalWeight', 'Poids objectif (kg)')}${f('goalDate', 'Date objectif', 'date')}
     <p class="muted">Calories et protéines : point de départ à ajuster. Si la moyenne 7 jours ne baisse pas en 2 semaines, retire 150 kcal.</p></div>
   <div class="card"><h2>Sauvegarde</h2><p class="muted">Les données sont sur ce téléphone uniquement. Exporte de temps en temps.</p>
     <div class="row"><button class="ghost" data-a="export">Exporter</button><button class="ghost" data-a="import">Importer</button></div>
@@ -559,6 +626,7 @@ const A = {
     const n = parseInt(document.getElementById('maxIn').value); if (!n && n !== 0) return;
     S.gtg.tests = S.gtg.tests.filter(t => t.date !== today()).concat({date: today(), max: n}); save();
   },
+  addSteps() { const n = parseInt(document.getElementById('stepsIn').value.replace(/\D/g, '')); if (n >= 0) { S.steps[today()] = n; save(); } },
   addCardio() {
     const min = parseInt(document.getElementById('cMin').value); if (!min) return;
     S.cardio.push({id: uid(), date: today(), type: document.getElementById('cType').value, min}); save();
