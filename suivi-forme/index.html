@@ -51,6 +51,9 @@ nav button.on{color:var(--accent)}
 .warn{color:var(--warn)}
 .bad{color:var(--bad)}
 svg text{fill:var(--muted);font-size:10px}
+.guide{background:var(--card2);border-radius:10px;padding:10px 12px;margin-top:6px;font-size:14px}
+.guide p{margin:4px 0 8px}
+.vid{display:inline-block;color:var(--accent2);text-decoration:none;font-weight:600;font-size:14px}
 details summary{cursor:pointer;color:var(--accent2);font-size:13px;margin-top:6px}
 </style>
 </head>
@@ -116,16 +119,144 @@ const WEEK = [['Lun', 'A · Haut tirage (maison)'], ['Mar', 'Zone 2, 40 min'], [
   ['Jeu', 'C · Jambes + Zone 2 (salle)'], ['Ven', 'Repos actif, marche'], ['Sam', 'D · Full body + HIIT doux (maison)'], ['Dim', 'Repos ou Zone 2']];
 const ORDER = ['A', 'B', 'C', 'D'];
 
+// ---------- Fiches exercices (d : départ, m : mouvement, k : points clés, e : erreur, q : recherche vidéo) ----------
+const G = (d, m, k, e, q) => ({d, m, k, e, q});
+const GUIDE = {
+  'Tractions négatives': G('Monte au-dessus de la barre avec une chaise ou un saut, menton au-dessus de la barre.', 'Descends le plus lentement possible (5 s) jusqu\'aux bras tendus. Remonte avec la chaise, recommence.', 'Omoplates serrées et basses, gainage, contrôle jusqu\'en bas.', 'Se laisser tomber à la fin. Les 2 dernières secondes comptent le plus.', 'negative pull ups tutorial'),
+  'Tractions strictes (quand max ≥ 5)': G('Suspendu, bras tendus, mains un peu plus larges que les épaules, paumes vers l\'avant.', 'Tire les coudes vers les hanches jusqu\'au menton au-dessus de la barre, redescends contrôlé.', 'Commence par abaisser les épaules, pas d\'élan, gainage.', 'Balancer les jambes ou ne descendre qu\'à moitié.', 'pull up proper form'),
+  'Suspension active 20 s': G('Suspendu à la barre, bras tendus.', 'Abaisse les épaules (comme pour les éloigner des oreilles) et tiens 20 s.', 'Le corps monte de 2-3 cm sans plier les bras. Ça construit la base des tractions.', 'Rester relâché, épaules dans les oreilles.', 'active hang scapular pull up'),
+  'Tractions élastique': G('Élastique accroché à la barre, un pied ou un genou dedans.', 'Traction complète, l\'élastique aide en bas du mouvement.', 'Descente lente, prends un élastique plus fin quand 3 x 8 passe.', 'Rebondir sur l\'élastique en bas.', 'band assisted pull up'),
+  'Tractions assistées machine': G('Genoux sur la plateforme, contrepoids réglé.', 'Tire jusqu\'au menton au-dessus des poignées, redescends lentement.', 'Diminue l\'assistance chaque semaine.', 'Trop d\'assistance : il faut que les 2 dernières reps soient dures.', 'assisted pull up machine form'),
+  'Rowing australien (barre basse)': G('Sous une barre à hauteur de taille, bras tendus, corps droit, talons au sol.', 'Tire la poitrine vers la barre, coudes à 45°, redescends lentement.', 'Corps en planche, serre les omoplates en haut. Plus tes pieds avancent, plus c\'est dur.', 'Les hanches qui tombent.', 'australian pull up inverted row'),
+  'Rowing sous une table': G('Allongé sous une table solide, mains sur le bord.', 'Tire la poitrine vers la table, corps droit.', 'Vérifie que la table ne bascule pas.', 'Plier les hanches pour tricher.', 'table row bodyweight'),
+  'Chin-up isométrique': G('Paumes vers toi, monte menton au-dessus de la barre (avec une chaise si besoin).', 'Tiens la position haute le plus longtemps possible.', 'Coudes serrés, poitrine vers la barre, respire.', 'Lâcher d\'un coup : redescends en contrôlant.', 'chin up hold isometric'),
+  'Pompes': G('Mains un peu plus larges que les épaules, corps droit de la tête aux talons.', 'Descends la poitrine à 2-3 cm du sol, pousse.', 'Coudes à 45° du corps, fesses et abdos serrés.', 'Bassin qui tombe ou coudes écartés à 90°.', 'push up proper form'),
+  'Pompes pieds surélevés': G('Pieds sur une chaise ou un lit, mains au sol.', 'Pompe classique, plus de charge sur le haut des pecs et les épaules.', 'Plus les pieds sont hauts, plus c\'est dur.', 'Cambrer le bas du dos.', 'decline push up'),
+  'Pompes archer': G('Mains très écartées.', 'Descends vers une main, l\'autre bras reste presque tendu.', 'Étape vers la pompe sur un bras.', 'Tourner le bassin.', 'archer push up'),
+  'Pompes diamant': G('Mains rapprochées sous la poitrine, pouces et index qui forment un losange.', 'Descends la poitrine vers les mains, pousse.', 'Coudes le long du corps : cible les triceps.', 'Coudes qui partent sur les côtés.', 'diamond push up form'),
+  'Pike push-ups': G('En V inversé, fesses hautes, mains au sol largeur d\'épaules.', 'Plie les coudes, la tête descend devant les mains, pousse.', 'Prépare au développé épaules. Pieds surélevés pour plus dur.', 'Descendre la poitrine au lieu de la tête.', 'pike push up tutorial'),
+  'Dips': G('En appui sur la barre de dips, bras tendus, épaules basses.', 'Descends jusqu\'à ce que les coudes soient à 90°, remonte.', 'Penche légèrement en avant, coudes vers l\'arrière.', 'Descendre trop bas avec les épaules qui montent aux oreilles.', 'dips proper form'),
+  'Dips négatifs': G('En haut, bras tendus.', 'Descends en 4-5 s, pose les pieds, remonte avec les jambes.', 'Pour progresser quand les dips complets sont durs.', 'Descente trop rapide.', 'negative dips'),
+  'Dips lestés sac à dos (quand 4 x 12 OK)': G('Sac à dos chargé (livres, bouteilles), sur les épaules.', 'Dips normaux.', 'Ajoute 2-5 kg à la fois.', 'Ajouter du poids avant de maîtriser 4 x 12 propres.', 'weighted dips backpack'),
+  'Y-T-W au sol': G('Allongé sur le ventre, front sur une serviette.', 'Lève les bras en Y, puis en T, puis en W (coudes pliés), 2 s en haut.', 'Pouces vers le plafond, serre les omoplates. Sans poids.', 'Lever la tête ou cambrer.', 'YTW exercise prone'),
+  'Curl sac à dos': G('Debout, sac chargé tenu par la poignée ou les bretelles.', 'Plie les coudes pour monter le sac, redescends lentement.', 'Coudes collés au corps.', 'Balancer le buste.', 'backpack bicep curl'),
+  'Relevés de genoux à la barre': G('Suspendu à la barre, bras tendus.', 'Monte les genoux vers la poitrine en enroulant le bassin, redescends lentement.', 'Pas d\'élan, expire en montant.', 'Se balancer.', 'hanging knee raise'),
+  'Relevés de jambes suspendu': G('Suspendu ou sur la chaise romaine.', 'Monte les jambes tendues ou les genoux, enroule le bassin.', 'Contrôle la descente.', 'Balancer.', 'hanging leg raise form'),
+  'Hollow hold': G('Sur le dos, bas du dos plaqué au sol.', 'Décolle épaules et jambes tendues, tiens.', 'Bas du dos toujours collé. Genoux pliés pour plus facile.', 'Dos qui se creuse.', 'hollow body hold'),
+  'Dead bug': G('Sur le dos, bras vers le plafond, genoux à 90° au-dessus des hanches.', 'Allonge un bras et la jambe opposée, reviens, change.', 'Bas du dos collé au sol, lent.', 'Aller trop vite.', 'dead bug exercise'),
+  'Planche': G('Sur les avant-bras et les pointes de pieds.', 'Tiens le corps droit.', 'Serre fesses et abdos, respire.', 'Fesses trop hautes ou bassin qui tombe.', 'plank proper form'),
+  'Chaise murale': G('Dos contre un mur, glisse jusqu\'à cuisses presque parallèles au sol.', 'Tiens la position.', 'Genoux au-dessus des chevilles, poids dans les talons. Remonte un peu si la cheville tire.', 'Genoux qui rentrent vers l\'intérieur.', 'wall sit form'),
+  'Pont fessier une jambe': G('Sur le dos, un pied au sol talon proche des fesses, l\'autre jambe tendue en l\'air.', 'Pousse dans le talon pour monter les hanches, 1 s en haut.', 'Serre la fesse, bassin bien horizontal.', 'Pousser avec le bas du dos.', 'single leg glute bridge'),
+  'Pont fessier deux jambes': G('Sur le dos, pieds à plat, talons proches des fesses.', 'Monte les hanches, serre les fesses 2 s.', 'Pousse dans les talons.', 'Cambrer.', 'glute bridge form'),
+  'Pont fessier': G('Sur le dos, pieds à plat, talons proches des fesses.', 'Monte les hanches, serre les fesses 2 s.', 'Pousse dans les talons.', 'Cambrer.', 'glute bridge form'),
+  'Leg curl serviette au sol': G('Sur le dos, talons sur une serviette (carrelage), hanches levées.', 'Ramène les talons vers les fesses en gardant les hanches hautes, puis allonge lentement.', 'Le retour lent est le plus efficace.', 'Laisser tomber les hanches.', 'sliding leg curl towel'),
+  'Fente arrière lente (si zéro douleur)': G('Debout, pieds largeur de hanches, tiens-toi à un mur si besoin.', 'Recule une jambe, descends le genou arrière près du sol, reviens.', 'Poids sur le talon avant. Stop à la moindre douleur de cheville.', 'Genou avant qui rentre.', 'reverse lunge form'),
+  'Split squat statique': G('Fente fixe, un pied devant, un derrière.', 'Monte et descends sans bouger les pieds.', 'Plus stable que la fente : bon pour la cheville.', 'Buste penché.', 'split squat form'),
+  'Montées sur pointe': G('Debout, avant des pieds sur une marche ou au sol, main au mur.', 'Monte sur la pointe des pieds 1 s, redescends en 3 s.', 'Fait partie de la rééducation de la cheville.', 'Monter vite et rebondir.', 'calf raise form'),
+  'Marche rapide Zone 2': G('Bonnes chaussures, terrain plat ou en pente douce.', 'Marche vite, 30-40 min.', 'Zone 2 : tu peux parler mais pas chanter.', 'Aller trop vite et finir essoufflé.', 'zone 2 cardio explained'),
+  'HIIT sans saut': G('Choisis un exercice sans saut (mountain climbers lents, shadow boxing, squat + planche).', '30 s à fond, 30 s de repos, 8 fois.', 'Toujours sans impact tant que la cheville n\'est pas validée.', 'Ajouter des burpees ou des sauts.', 'low impact HIIT no jumping'),
+  'Presse à cuisses': G('Assis, dos collé au dossier, pieds largeur d\'épaules au milieu de la plateforme.', 'Descends jusqu\'à genoux à 90°, pousse sans verrouiller les genoux.', 'Talons bien à plat.', 'Bas du dos qui décolle en bas.', 'leg press proper form'),
+  'Hip thrust': G('Haut du dos contre un banc, barre (avec mousse) sur les hanches.', 'Monte les hanches jusqu\'à l\'alignement, serre les fesses 1 s.', 'Menton rentré, tibias verticaux en haut.', 'Cambrer au lieu de pousser avec les fesses.', 'hip thrust form'),
+  'Leg curl': G('Machine allongée ou assise, rouleau au-dessus des talons.', 'Plie les genoux, redescends lentement.', 'Hanches collées au banc.', 'Soulever les hanches.', 'leg curl machine form'),
+  'Leg extension': G('Assis, rouleau sur le bas des tibias.', 'Tends les jambes, 1 s en haut, redescends lentement.', 'Charge modérée, mouvement contrôlé.', 'Donner des à-coups.', 'leg extension form'),
+  'Mollets debout (rééducation)': G('Machine ou marche, avant des pieds en appui.', 'Monte haut, redescends lentement sous la marche.', 'Amplitude complète, lent.', 'Rebondir.', 'standing calf raise form'),
+  'Vélo ou rameur Zone 2': G('Vélo : selle à hauteur de hanche. Rameur : jambes, puis buste, puis bras.', '20-30 min à intensité modérée.', 'Tu dois pouvoir parler.', 'Partir trop fort.', 'zone 2 cardio bike'),
+  'Développé haltères': G('Allongé sur le banc, haltères au-dessus de la poitrine.', 'Descends les haltères à hauteur de poitrine, coudes à 45°, pousse.', 'Omoplates serrées, pieds au sol.', 'Coudes à 90° du corps.', 'dumbbell bench press form'),
+  'Développé couché': G('Allongé, yeux sous la barre, mains un peu plus larges que les épaules.', 'Descends la barre bas sur les pecs, pousse.', 'Omoplates serrées, léger cambré, pieds au sol.', 'Rebondir sur la poitrine.', 'bench press proper form'),
+  'Développé incliné haltères': G('Banc incliné à 30°.', 'Comme le développé haltères.', 'Ne descends pas trop bas si l\'épaule tire.', 'Banc trop incliné (devient un exercice d\'épaules).', 'incline dumbbell press form'),
+  'Développé militaire haltères': G('Assis ou debout, haltères à hauteur d\'épaules.', 'Pousse au-dessus de la tête, redescends.', 'Abdos serrés, ne cambre pas.', 'Cambrer le bas du dos.', 'dumbbell shoulder press form'),
+  'Élévations latérales': G('Debout, haltères légers le long du corps.', 'Lève les bras sur les côtés jusqu\'à hauteur d\'épaules, coudes légèrement pliés.', 'Léger, lent, sans élan.', 'Hausser les épaules ou balancer.', 'lateral raise form'),
+  'Extension triceps poulie': G('Face à la poulie haute, corde ou barre, coudes collés au corps.', 'Tends les bras vers le bas, remonte lentement.', 'Seuls les avant-bras bougent.', 'Coudes qui avancent.', 'tricep pushdown form'),
+  'Face pull': G('Poulie à hauteur du visage, corde.', 'Tire la corde vers le front en écartant les mains, coudes hauts.', 'Excellent pour la santé des épaules.', 'Trop lourd, buste qui recule.', 'face pull form'),
+  'Rowing barre': G('Buste penché à 45°, dos plat, barre bras tendus.', 'Tire la barre vers le nombril, redescends.', 'Dos plat, serre les omoplates.', 'Dos rond ou se redresser pour tricher.', 'barbell row form'),
+  'Rowing poulie assis': G('Assis, pieds sur les cales, dos droit.', 'Tire la poignée vers le ventre, serre les omoplates.', 'Le buste ne bascule pas.', 'Tirer avec le dos en se penchant.', 'seated cable row form'),
+  'Curl haltères': G('Debout, haltères bras tendus, paumes vers l\'avant.', 'Plie les coudes, redescends lentement.', 'Coudes fixes.', 'Balancer le corps.', 'dumbbell curl form'),
+  'HIIT vélo ou rameur': G('Échauffe-toi 5 min.', '30 s fort, 90 s léger, 8 fois.', 'Sans impact pour la cheville.', 'Commencer sans échauffement.', 'bike HIIT intervals'),
+  'Tirage vertical poulie': G('Assis, cuisses calées, barre large.', 'Tire la barre vers le haut de la poitrine, coudes vers le bas.', 'Buste légèrement en arrière, épaules basses.', 'Tirer derrière la nuque.', 'lat pulldown form')
+};
+const vid = q => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+function guideHtml(name) {
+  let n = name.replace(/^Circuit : /, ''); n = n[0].toUpperCase() + n.slice(1);
+  const g = GUIDE[n] || GUIDE[n.replace(/ \(.*\)$/, '')] || GUIDE[Object.keys(GUIDE).find(k => k.startsWith(n)) || ''];
+  return `<details><summary>Comment faire</summary><div class="guide">${g ? `<p><b>Départ :</b> ${g.d}</p><p><b>Mouvement :</b> ${g.m}</p><p><b>Clés :</b> ${g.k}</p><p><b>Erreur :</b> ${g.e}</p>` : ''}
+    <a class="vid" href="${vid(g?.q || name + ' exercice technique')}" target="_blank" rel="noopener">▶ Voir une vidéo</a></div></details>`;
+}
+
+// ---------- Schémas cheville ----------
+const AC = '#4ade80', MU = '#8b93a3', TX = '#eef0f4';
+const svg = (inner, h = 120) => `<svg viewBox="0 0 220 ${h}" width="100%" style="max-width:340px;display:block;margin:6px 0" fill="none" stroke="${TX}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${AC}" stroke="none"/></marker></defs>${inner}</svg>`;
+const arrow = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${AC}" marker-end="url(#ar)"/>`;
+const curve = d => `<path d="${d}" stroke="${AC}" marker-end="url(#ar)"/>`;
+const label = (x, y, t, a = 'middle') => `<text x="${x}" y="${y}" text-anchor="${a}" fill="${MU}" stroke="none" font-size="10">${t}</text>`;
+const floor = (y = 110, x1 = 10, x2 = 210) => `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${MU}" stroke-width="1.5"/>`;
+// Jambe et pied vus de côté : x = cheville, y = sol. lift = talon levé (pointe), toeUp = pointe levée (talon)
+function foot(x, y, {lift = 0, toeUp = 0, ghost = false} = {}) {
+  const c = ghost ? `stroke="${MU}" stroke-dasharray="3 3"` : '';
+  const ay = y - 12 - lift, toeX = x + 38, toeY = y - toeUp;
+  return `<g ${c}><line x1="${x}" y1="${ay - 55}" x2="${x}" y2="${ay}"/><path d="M${x - 9} ${ay + 6 + (lift ? 0 : 6)} Q${x - 10} ${ay - 2} ${x} ${ay} L${toeX} ${toeY - 4} L${toeX} ${toeY} L${x - 9} ${lift ? y - lift + 4 : y}"/></g>`;
+}
+// Bonhomme debout : x, y = sol
+function fig(x, y, {one = false, arms = 'down', eyes = 'open', toes = false, wall = false} = {}) {
+  const hy = y - 58, foot = toes ? y - 6 : y;
+  let s = `<circle cx="${x}" cy="${y - 100}" r="8"/><line x1="${x}" y1="${y - 92}" x2="${x}" y2="${hy}"/>`;
+  s += arms === 'out' ? `<line x1="${x - 28}" y1="${y - 80}" x2="${x + 28}" y2="${y - 80}"/>` : arms === 'wall' ? `<line x1="${x}" y1="${y - 82}" x2="${x + 24}" y2="${y - 78}"/>` : `<line x1="${x}" y1="${y - 84}" x2="${x - 12}" y2="${y - 62}"/><line x1="${x}" y1="${y - 84}" x2="${x + 12}" y2="${y - 62}"/>`;
+  s += `<line x1="${x}" y1="${hy}" x2="${x - 2}" y2="${foot}"/><line x1="${x - 4}" y1="${foot}" x2="${x + 8}" y2="${foot}"/>`;
+  s += one ? `<polyline points="${x},${hy} ${x + 14},${hy + 18} ${x + 6},${hy + 34}"/>` : `<line x1="${x}" y1="${hy}" x2="${x + 6}" y2="${foot}"/>`;
+  if (eyes === 'closed') s += `<line x1="${x + 1}" y1="${y - 101}" x2="${x + 6}" y2="${y - 101}" stroke-width="1.5"/>`;
+  if (wall) s += `<line x1="${x + 26}" y1="${y - 115}" x2="${x + 26}" y2="${y}" stroke="${MU}" stroke-width="4"/>`;
+  return s;
+}
+// Pied vu de dessus
+const footTop = (x, y) => `<path d="M${x} ${y - 32} C${x + 14} ${y - 32} ${x + 14} ${y - 8} ${x + 10} ${y + 6} C${x + 8} ${y + 22} ${x - 8} ${y + 22} ${x - 10} ${y + 6} C${x - 14} ${y - 8} ${x - 14} ${y - 32} ${x} ${y - 32}Z"/>` + [-8, -3, 2, 7].map((d, i) => `<circle cx="${x + d}" cy="${y - 37 + (i ? 1 : 0)}" r="${i ? 2.5 : 3.5}"/>`).join('');
+
 const REHAB = {
   1: {name: 'Phase 1 : douleur / gonflement', items: [
-    'Alphabet avec le pied, 2 fois', 'Isométriques 4 directions contre un mur, 5 x 10 s', 'Flexion / extension sans douleur, 2 x 20',
-    'Marche normale tant que ça ne fait pas mal', 'Glace 15 min si gonflé']},
+    {t: 'Alphabet avec le pied, 2 fois', q: 'ankle alphabet exercise sprain',
+      how: 'Assis, jambe tendue, talon posé sur un coussin. Écris l\'alphabet en l\'air avec le gros orteil, en bougeant seulement la cheville (pas le genou). Mouvements amples mais sans douleur.',
+      img: svg(floor() + `<line x1="20" y1="70" x2="120" y2="70" stroke-width="8" stroke="${MU}"/><path d="M120 66 L150 40 L156 48 L128 78Z"/>` + label(160, 30, 'A B C…', 'start') + curve('M170 50 C190 60 190 85 165 85 C145 85 150 65 160 62') + label(70, 90, 'jambe immobile'))},
+    {t: 'Isométriques 4 directions contre un mur, 5 x 10 s', q: 'isometric ankle exercises',
+      how: 'Assis, pied contre un obstacle fixe (mur, pied de table, autre pied). Pousse 10 s à moitié de ta force SANS que le pied bouge, puis relâche. Dans 4 directions : bord extérieur du pied contre le mur (le plus important), bord intérieur, dessus du pied sous un meuble (pointe vers toi), plante du pied contre le mur (pointe vers le bas).',
+      img: svg(footTop(60, 60) + `<line x1="88" y1="25" x2="88" y2="95" stroke="${MU}" stroke-width="6"/>` + arrow(68, 60, 82, 60) + label(100, 28, 'mur', 'start') + label(60, 112, 'vu de dessus') +
+        foot(160, 100) + `<line x1="150" y1="40" x2="210" y2="40" stroke="${MU}" stroke-width="5"/>` + arrow(185, 78, 185, 50) + label(185, 32, 'meuble') + label(30, 15, 'Pousse sans bouger, 10 s', 'start'))},
+    {t: 'Flexion / extension sans douleur, 2 x 20', q: 'ankle pumps exercise',
+      how: 'Assis ou allongé, jambe tendue. Tire la pointe du pied vers toi au maximum, puis pousse-la vers l\'avant au maximum, comme pour appuyer sur une pédale. Lent, sans douleur.',
+      img: svg(`<line x1="20" y1="70" x2="110" y2="70" stroke-width="8" stroke="${MU}"/><path d="M110 64 L120 30 L128 32 L122 74Z"/><path d="M110 66 L148 84 L144 92 L110 76Z" stroke="${MU}" stroke-dasharray="3 3"/>` + curve('M138 30 C160 45 162 70 152 84') + curve('M150 92 C170 70 160 40 134 26') + label(10, 100, 'pointe vers toi, puis vers l\'avant', 'start'))},
+    {t: 'Marche normale tant que ça ne fait pas mal', q: 'walking after ankle sprain',
+      how: 'Marche normalement en déroulant bien le pied : talon, puis plante, puis pointe. Si tu boites, raccourcis la marche. Une chevillère peut aider les premiers jours.',
+      img: svg(floor() + fig(70, 110) + foot(130, 110, {toeUp: 10}) + arrow(150, 40, 205, 40) + label(178, 30, 'talon → pointe'))},
+    {t: 'Glace 15 min si gonflé', q: 'ice ankle sprain how long',
+      how: 'Glace dans un linge (jamais directement sur la peau), 15 min, jambe surélevée au-dessus du niveau du cœur. Seulement les premiers jours ou après un effort qui fait gonfler.',
+      img: svg(floor() + foot(90, 100) + `<rect x="74" y="58" width="34" height="22" rx="4" fill="#60a5fa55" stroke="#60a5fa"/>` + label(150, 60, '15 min', 'start') + label(150, 75, 'dans un linge', 'start'))}]},
   2: {name: 'Phase 2 : renforcement', items: [
-    'Élastique 4 directions, 3 x 15 chacune (surtout vers l\'extérieur)', 'Équilibre sur la jambe blessée, 3 x 30 s',
-    'Montées sur pointe deux pieds, 3 x 15', 'Marche sur talons puis sur pointes, 2 x 20 m']},
+    {t: 'Élastique 4 directions, 3 x 15 chacune (surtout vers l\'extérieur)', q: 'resistance band ankle eversion exercise',
+      how: 'Assis par terre, jambe tendue. Élastique autour de l\'avant du pied, attaché à un pied de table. Tourne le pied contre l\'élastique dans 4 directions, en changeant l\'endroit où il est attaché : vers l\'extérieur (le plus important, ce sont les muscles qui protègent de l\'entorse), vers l\'intérieur, pointe vers toi, pointe vers le bas. Lent : 2 s aller, 2 s retour. La jambe ne tourne pas, seul le pied bouge.',
+      img: svg(footTop(80, 65) + `<path d="M74 40 Q40 38 20 40" stroke="#fbbf24" stroke-width="3"/><rect x="10" y="30" width="10" height="20" fill="${MU}" stroke="none"/>` + arrow(96, 50, 130, 42) + label(140, 40, 'vers l\'extérieur', 'start') + label(18, 25, 'élastique', 'start') + label(80, 110, 'vu de dessus, pied droit'))},
+    {t: 'Équilibre sur la jambe blessée, 3 x 30 s', q: 'single leg balance ankle rehab',
+      how: 'Debout sur la jambe blessée, genou très légèrement plié, près d\'un mur pour te rattraper. Tiens 30 s sans poser l\'autre pied. Regarde un point fixe devant toi.',
+      img: svg(floor() + fig(100, 110, {one: true, arms: 'out'}) + label(150, 50, '30 s', 'start') + label(150, 64, 'genou souple', 'start'))},
+    {t: 'Montées sur pointe deux pieds, 3 x 15', q: 'double leg calf raise',
+      how: 'Debout, une main au mur. Monte sur la pointe des pieds en 1 s, tiens 1 s, redescends lentement en 3 s. Garde le poids sur le gros orteil, la cheville ne doit pas partir vers l\'extérieur.',
+      img: svg(floor() + foot(70, 110, {ghost: true}) + foot(140, 110, {lift: 18}) + arrow(120, 80, 120, 55) + label(85, 120, 'départ') + label(155, 120, 'pointe'), 125)},
+    {t: 'Marche sur talons puis sur pointes, 2 x 20 m', q: 'heel walk toe walk exercise',
+      how: 'Marche 20 m sur les talons, pointes levées. Puis 20 m sur la pointe des pieds, talons levés. Petits pas, contrôlés.',
+      img: svg(floor() + foot(60, 110, {toeUp: 18}) + foot(150, 110, {lift: 18}) + label(75, 125, 'sur les talons') + label(165, 125, 'sur les pointes'), 130)}]},
   3: {name: 'Phase 3 : proprioception et retour', items: [
-    'Équilibre une jambe yeux fermés, 3 x 30 s', 'Équilibre une jambe sur coussin, 3 x 30 s',
-    'Montées sur pointe une jambe, 3 x 15', 'Petits sauts sur place deux pieds, 3 x 20 (si zéro douleur)', 'Sauts latéraux légers, 3 x 10']}
+    {t: 'Équilibre une jambe yeux fermés, 3 x 30 s', q: 'single leg balance eyes closed',
+      how: 'Comme l\'équilibre sur une jambe, mais yeux fermés. C\'est beaucoup plus dur : ta cheville doit sentir seule sa position. Reste à côté d\'un mur.',
+      img: svg(floor() + fig(90, 110, {one: true, arms: 'out', eyes: 'closed', wall: true}) + label(150, 50, 'yeux fermés', 'start') + label(150, 64, '30 s', 'start'))},
+    {t: 'Équilibre une jambe sur coussin, 3 x 30 s', q: 'single leg balance pillow ankle',
+      how: 'Debout sur une jambe sur un coussin ou un oreiller plié. La surface instable force la cheville à se corriger en permanence. Yeux ouverts d\'abord.',
+      img: svg(floor(115) + `<rect x="70" y="104" width="50" height="11" rx="5" fill="${MU}44" stroke="${MU}"/>` + fig(95, 104, {one: true, arms: 'out'}) + label(150, 100, 'coussin', 'start'), 120)},
+    {t: 'Montées sur pointe une jambe, 3 x 15', q: 'single leg calf raise',
+      how: 'Comme les montées sur pointe, mais sur la jambe blessée seulement, main au mur. Redescends lentement en 3 s. C\'est aussi un des tests pour reprendre la course.',
+      img: svg(floor() + fig(90, 110, {one: true, arms: 'wall', toes: true, wall: true}) + arrow(60, 95, 60, 70) + label(150, 60, 'une jambe', 'start'))},
+    {t: 'Petits sauts sur place deux pieds, 3 x 20 (si zéro douleur)', q: 'pogo hops ankle rehab',
+      how: 'Petits sauts sur place, 2-3 cm de haut, sur l\'avant des pieds, genoux souples. Atterrissage silencieux. Seulement si tout le reste se fait sans aucune douleur.',
+      img: svg(floor() + fig(100, 110, {}) + arrow(140, 95, 140, 75) + arrow(150, 75, 150, 95) + label(165, 85, '2-3 cm', 'start'))},
+    {t: 'Sauts latéraux légers, 3 x 10', q: 'lateral hops ankle rehab',
+      how: 'Trace une ligne au sol. Petits sauts à pieds joints de gauche à droite par-dessus la ligne. Commence lentement, atterrissage contrôlé. C\'est le dernier exercice avant la reprise du sport.',
+      img: svg(floor() + `<line x1="110" y1="104" x2="110" y2="116" stroke="${AC}" stroke-width="3"/>` + fig(80, 110) + curve('M95 60 Q115 35 140 60') + label(150, 25, 'par-dessus', 'start') + label(150, 38, 'la ligne', 'start'))}]}
 };
 const CRITERIA = ['Marche 30 min sans douleur', 'Équilibre une jambe 30 s stable (côté blessé)',
   '15 montées sur pointe une jambe sans douleur', '20 petits sauts sur place une jambe sans douleur'];
@@ -303,6 +434,7 @@ function viewSeance() {
     ${draft.exercises.map((e, i) => { const def = P[mode][i], lp = lastPerf(e.name); return `<div class="ex">
       <select data-a="swap" data-v="${i}">${[def.n, ...def.alt].map(n => `<option ${n === e.name ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
       <div class="muted" style="margin-top:4px">Objectif : ${def.t}${lp ? '<br>Dernière fois : ' + esc(lp) : ''}</div>
+      ${guideHtml(e.name)}
       <div class="sets"><span class="muted">#</span><span class="muted">Reps / sec</span><span class="muted">Kg ${mode === 'maison' ? '(lest)' : ''}</span>
       ${e.sets.map((s, j) => `<span class="muted">${j + 1}</span><input inputmode="numeric" data-a="set" data-v="${i},${j},reps" value="${s.reps ?? ''}"><input inputmode="decimal" data-a="set" data-v="${i},${j},kg" value="${s.kg ?? ''}">`).join('')}</div>
     </div>`; }).join('')}
@@ -371,7 +503,8 @@ function viewCheville() {
   return `<h1>Cheville et course</h1>
   <div class="card"><div class="seg">${[1, 2, 3].map(p => `<button class="${p === a.phase ? 'on' : ''}" data-a="phase" data-v="${p}">Phase ${p}</button>`).join('')}</div>
     <h2 style="margin-top:12px">${ph.name}</h2>
-    ${ph.items.map((t, i) => `<label class="check"><input type="checkbox" data-a="rehab" data-v="${i}" ${done.includes(i) ? 'checked' : ''}><span>${t}</span></label>`).join('')}
+    ${ph.items.map((it, i) => `<div class="check"><input type="checkbox" data-a="rehab" data-v="${i}" ${done.includes(i) ? 'checked' : ''}><div style="flex:1"><span>${it.t}</span>
+      <details><summary>Comment faire</summary><div class="guide">${it.img}<p>${it.how}</p><a class="vid" href="${vid(it.q)}" target="_blank" rel="noopener">▶ Voir une vidéo</a></div></details></div></div>`).join('')}
     <p class="muted">Passe à la phase suivante quand tout se fait sans douleur. Continue la phase 3 au moins 3 fois par semaine pendant 3 mois, même guéri : c'est ce qui empêche les rechutes. Douleur forte, gros gonflement ou appui impossible : consulte.</p></div>
   <div class="card"><h2>Critères avant de courir</h2>
     ${CRITERIA.map((c, i) => `<label class="check"><input type="checkbox" data-a="crit" data-v="${i}" ${a.criteria[i] ? 'checked' : ''}><span>${c}</span></label>`).join('')}
